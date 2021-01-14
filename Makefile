@@ -28,6 +28,6 @@ _update:
 	apk --no-cache add --virtual .build-deps gcc g++
 	pipenv lock
 
-NEW_TAG =: $(shell jq -r '.default.ansible.version' Pipfile.lock | sed 's/^==//')
+NEW_TAG := $(shell jq -r '.default.ansible.version' Pipfile.lock | sed 's/^==//')
 tag: ## Creates a git tag based on the ansible version
 	git tag v$(NEW_TAG)
