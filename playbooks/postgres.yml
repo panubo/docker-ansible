@@ -1,0 +1,43 @@
+---
+
+# export PGHOST=172.17.0.2
+# echo "172.17.0.2:5432:*:postgres:password" > ~/.pgpass && chmod 0600 ~/.pgpass
+# ansible-playbook -i localhost, playbooks/postgres.yml --diff
+
+- name: postgres
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    database_name: mydb
+    database_user: myuser
+    database_pass: mypassword
+    database_extensions:
+      - name: hstore
+        # state: absent
+  tasks:
+    - name: wait for postgres
+      postgresql_ping:
+      register: postgres_is_available
+      until: postgres_is_available.is_available == true
+      retries: 3
+      delay: 3
+
+    - name: create role "{{ database_user }}"
+      postgresql_user:
+        name: "{{ database_user }}"
+        password: "{{ database_pass }}"
+        no_password_changes: no # set to yes when using RDS, disabled password changes
+
+    - name: create database "{{ database_name }}"
+      postgresql_db:
+        name: "{{ database_name }}"
+        owner: "{{ database_user }}"
+
+    - name: manage extensions
+      postgresql_ext:
+        name: "{{ item.name }}"
+        state: "{{ item.state | default('present') }}"
+        db: "{{ database_name }}"
+      with_items:
+        - "{{ database_extensions }}"
